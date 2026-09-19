@@ -1,12 +1,12 @@
 import { z } from "zod";
 
-const MOBILE_PATTERN = /^09\d{9}$/;
+const NATIONAL_ID_PATTERN = /^\d{10}$/;
 
 export const loginSchema = z.object({
-  mobile: z
+  nationalId: z
     .string()
-    .min(1, "شماره موبایل را وارد کنید")
-    .regex(MOBILE_PATTERN, "شماره موبایل معتبر نیست، مثل ۰۹۱۲۳۴۵۶۷۸۹"),
+    .min(1, "کد ملی را وارد کنید")
+    .regex(NATIONAL_ID_PATTERN, "کد ملی باید ۱۰ رقم باشد"),
   password: z
     .string()
     .min(1, "رمز عبور را وارد کنید")

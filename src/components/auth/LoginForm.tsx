@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { loginSchema, type LoginFormValues } from "@/lib/validation/login";
+import { setMockSession } from "@/lib/mock/session";
 
 export function LoginForm() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -15,41 +18,44 @@ export function LoginForm() {
     formState: { errors, isSubmitting },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { mobile: "", password: "" },
+    defaultValues: { nationalId: "", password: "" },
   });
 
   const onSubmit = async (values: LoginFormValues) => {
     setSubmitError(null);
     try {
-      // TODO: اتصال به API احراز هویت بانک
+      // نسخه آزمایشی بدون بک‌اند: هیچ تماس API واقعی انجام نمی‌شود
       await new Promise((resolve) => setTimeout(resolve, 600));
       console.log("login submit", values);
+      setMockSession();
+      router.push("/dashboard");
     } catch {
-      setSubmitError("ورود ناموفق بود. شماره موبایل یا رمز عبور را بررسی کنید.");
+      setSubmitError("ورود ناموفق بود. کد ملی یا رمز عبور را بررسی کنید.");
     }
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-5">
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="mobile" className="text-sm font-medium text-ink">
-          شماره موبایل
+        <label htmlFor="nationalId" className="text-sm font-medium text-ink">
+          کد ملی
         </label>
         <input
-          id="mobile"
-          type="tel"
+          id="nationalId"
+          type="text"
           inputMode="numeric"
-          autoComplete="tel"
-          placeholder="۰۹۱۲۳۴۵۶۷۸۹"
+          autoComplete="username"
+          placeholder="۱۰ رقم، مثل ۴۳۱۰۳۰۰۸۷۱"
           dir="ltr"
+          maxLength={10}
           className="w-full rounded-lg border border-line bg-white px-4 py-3 text-right text-base text-ink placeholder:text-ink-muted/70 transition-colors focus:border-navy-800 focus:outline-none focus:ring-2 focus:ring-navy-800/15 aria-invalid:border-danger aria-invalid:ring-danger/15"
-          aria-invalid={!!errors.mobile}
-          aria-describedby={errors.mobile ? "mobile-error" : undefined}
-          {...register("mobile")}
+          aria-invalid={!!errors.nationalId}
+          aria-describedby={errors.nationalId ? "nationalId-error" : undefined}
+          {...register("nationalId")}
         />
-        {errors.mobile && (
-          <p id="mobile-error" className="text-sm text-danger">
-            {errors.mobile.message}
+        {errors.nationalId && (
+          <p id="nationalId-error" className="text-sm text-danger">
+            {errors.nationalId.message}
           </p>
         )}
       </div>

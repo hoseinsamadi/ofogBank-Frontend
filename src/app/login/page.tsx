@@ -21,7 +21,7 @@ export default function LoginPage() {
             <div className="flex flex-col gap-2">
               <h2 className="text-2xl font-semibold text-ink">خوش آمدید</h2>
               <p className="text-base text-ink-muted">
-                برای ورود به حساب خود، شماره موبایل و رمز عبور را وارد کنید.
+                برای ورود به حساب خود، کد ملی و رمز عبور را وارد کنید.
               </p>
             </div>
 
