@@ -53,7 +53,7 @@ export default function DashboardPage() {
           className="rounded-xl border border-line bg-white p-5 transition-colors hover:border-navy-800"
         >
           <h2 className="text-base font-semibold text-ink">انتقال تجمیعی</h2>
-          <p className="mt-1 text-sm text-ink-muted">به‌زودی فعال می‌شود</p>
+          <p className="mt-1 text-sm text-ink-muted">بارگذاری فایل و مدیریت صف انتقال‌ها</p>
         </Link>
       </div>
     </div>

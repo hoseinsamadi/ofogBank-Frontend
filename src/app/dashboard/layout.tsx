@@ -15,15 +15,18 @@ const NAV_ITEMS = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [authorized, setAuthorized] = useState<boolean | null>(null);
+  const authorized = useSyncExternalStore(
+    () => () => undefined,
+    hasMockSession,
+    () => false,
+  );
 
   useEffect(() => {
     if (!hasMockSession()) {
       router.replace("/login");
       return;
     }
-    setAuthorized(true);
-  }, [router]);
+  }, [authorized, router]);
 
   const handleLogout = () => {
     clearMockSession();

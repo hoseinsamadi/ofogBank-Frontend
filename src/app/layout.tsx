@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import { Vazirmatn } from "next/font/google";
 import "./globals.css";
 
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
   description: "بانکداری دیجیتال افق بانک",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="fa" dir="rtl" className={`${vazirmatn.variable} h-full`}>
       <body className="min-h-full flex flex-col font-sans antialiased">
