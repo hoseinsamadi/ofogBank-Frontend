@@ -22,10 +22,10 @@ export default function ProfilePage() {
       <div className="rounded-xl border border-line bg-white p-6">
         <dl className="grid gap-4 sm:grid-cols-2">
           <InfoRow label="نام و نام خانوادگی" value={`${mockUser.firstName} ${mockUser.lastName}`} />
-          <InfoRow label="کد ملی" value={mockUser.nationalId} dir="ltr" />
-          <InfoRow label="شماره حساب" value={mockUser.accountNumber} dir="ltr" />
-          <InfoRow label="شماره کارت" value={mockUser.cardNumber} dir="ltr" />
-          <InfoRow label="شماره شبا" value={mockUser.iban} dir="ltr" />
+          <InfoRow label="کد ملی" value={mockUser.nationalId} dir="rtl" />
+          <InfoRow label="شماره حساب" value={mockUser.accountNumber} dir="rtl" />
+          <InfoRow label="شماره کارت" value={mockUser.cardNumber} dir="rtl" />
+          <InfoRow label="شماره شبا" value={mockUser.iban} dir="rtl" />
         </dl>
       </div>
 

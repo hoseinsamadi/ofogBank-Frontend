@@ -48,7 +48,7 @@ export default function DashboardPage() {
         <p className="mt-2 text-3xl font-semibold text-navy-950">
           {formatToman(mockUser.balance)}
         </p>
-        <p className="mt-1 text-sm text-ink-muted" dir="ltr">
+        <p className="mt-1 text-sm text-ink-muted" dir="rtl">
           شماره حساب: {mockUser.accountNumber}
         </p>
       </div>
