@@ -333,7 +333,7 @@ export default function BulkTransferPage() {
             </div>
             <div>
               <p className="text-sm text-ink-muted">مبلغ کل به ریال</p>
-              <p className="mt-1 text-xl font-semibold text-navy-950" dir="ltr">
+              <p className="mt-1 text-xl font-semibold text-navy-950" dir="rtl">
                 ریال {formatRial(totalRial)}
               </p>
             </div>
