@@ -1,0 +1,31 @@
+
+> ofogbank-frontend@0.1.0 build
+> next build
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 61ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1042ms
+  Running TypeScript ...
+  Finished TypeScript in 3.6s ...
+  Collecting page data using 10 workers ...
+  Generating static pages using 10 workers (0/9) ...
+  Generating static pages using 10 workers (2/9) 
+  Generating static pages using 10 workers (4/9) 
+  Generating static pages using 10 workers (6/9) 
+✓ Generating static pages using 10 workers (9/9) in 1459ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /dashboard
+├ ○ /dashboard/profile
+├ ○ /dashboard/transfer
+├ ○ /dashboard/transfer/bulk
+└ ○ /login
+
+
+○  (Static)  prerendered as static content
+
