@@ -33,3 +33,19 @@ body {
   background: var(--color-surface);
   color: var(--color-ink);
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #print-receipt,
+  #print-receipt * {
+    visibility: visible;
+  }
+  #print-receipt {
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    border: 1px solid #000;
+  }
+}

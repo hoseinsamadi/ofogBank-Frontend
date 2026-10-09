@@ -16,6 +16,7 @@ export const transferSchema = z.object({
     .min(1, "مبلغ را وارد کنید")
     .regex(/^\d+$/, "مبلغ باید فقط عدد باشد")
     .refine((value) => Number(value) > 0, "مبلغ باید بیشتر از صفر باشد"),
+  transactionType: z.string().optional(),
   description: z.string().optional(),
 });
 
