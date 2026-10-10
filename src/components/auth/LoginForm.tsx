@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { loginSchema, type LoginFormValues } from "@/lib/validation/login";
-import { setMockSession } from "@/lib/mock/session";
+import { getCsrfToken } from "@/lib/auth/session";
 
 export function LoginForm() {
   const router = useRouter();
@@ -24,13 +24,28 @@ export function LoginForm() {
   const onSubmit = async (values: LoginFormValues) => {
     setSubmitError(null);
     try {
-      // نسخه آزمایشی بدون بک‌اند: هیچ تماس API واقعی انجام نمی‌شود
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      console.log("login submit", values);
-      setMockSession();
+      const csrfToken = await getCsrfToken();
+      const response = await fetch("/api/backend/api/auth/login", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-TOKEN": csrfToken,
+        },
+        body: JSON.stringify({ nationalCode: values.nationalId, password: values.password }),
+      });
+      if (!response.ok) {
+        if (response.status === 429) {
+          setSubmitError("تعداد تلاش‌ها زیاد است. چند دقیقه دیگر دوباره امتحان کنید.");
+          return;
+        }
+        setSubmitError("ورود ناموفق بود. کد ملی یا رمز عبور را بررسی کنید.");
+        return;
+      }
       router.push("/dashboard");
+      router.refresh();
     } catch {
-      setSubmitError("ورود ناموفق بود. کد ملی یا رمز عبور را بررسی کنید.");
+      setSubmitError("ارتباط با سرویس ورود برقرار نشد. از روشن بودن Backend مطمئن شوید.");
     }
   };
 
@@ -47,7 +62,7 @@ export function LoginForm() {
           autoComplete="username"
           placeholder="۱۰ رقم، مثل ۴۳۱۰۳۰۰۸۷۱"
           dir="ltr"
-          maxLength={10}
+          maxLength={11}
           className="w-full rounded-lg border border-line bg-white px-4 py-3 text-right text-base text-ink placeholder:text-ink-muted/70 transition-colors focus:border-navy-800 focus:outline-none focus:ring-2 focus:ring-navy-800/15 aria-invalid:border-danger aria-invalid:ring-danger/15"
           aria-invalid={!!errors.nationalId}
           aria-describedby={errors.nationalId ? "nationalId-error" : undefined}
@@ -65,12 +80,7 @@ export function LoginForm() {
           <label htmlFor="password" className="text-sm font-medium text-ink">
             رمز عبور
           </label>
-          <a
-            href="/forgot-password"
-            className="text-sm text-navy-800 underline decoration-line underline-offset-4 hover:decoration-navy-800"
-          >
-            فراموشی رمز عبور
-          </a>
+          <span className="text-xs text-ink-muted">برای بازیابی رمز با مدیر سامانه تماس بگیرید.</span>
         </div>
         <div className="relative">
           <input

@@ -2,17 +2,13 @@
 
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
-import { mockUser } from "@/lib/mock/user";
+import { useCurrentUser } from "./layout";
 import {
   getStoredBulkTransferReport,
   subscribeToBulkTransferReport,
 } from "@/lib/bulk-transfer/report";
 
 const faNumber = new Intl.NumberFormat("fa-IR");
-
-function formatToman(amount: number) {
-  return new Intl.NumberFormat("fa-IR").format(amount) + " تومان";
-}
 
 function formatReportDate(iso: string) {
   try {
@@ -26,6 +22,7 @@ function formatReportDate(iso: string) {
 }
 
 export default function DashboardPage() {
+  const user = useCurrentUser();
   const report = useSyncExternalStore(
     subscribeToBulkTransferReport,
     getStoredBulkTransferReport,
@@ -36,22 +33,36 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold text-ink">
-          خوش آمدید، {mockUser.firstName} {mockUser.lastName}
+          خوش آمدید، {user.displayName}
         </h1>
         <p className="text-base text-ink-muted">
-          این یک نسخه آزمایشی داشبورد است و به بک‌اند واقعی متصل نیست.
+          نشست شما از سرویس حساب کاربری دریافت شده است.
         </p>
       </div>
 
       <div className="rounded-xl border border-line bg-white p-6">
-        <p className="text-sm text-ink-muted">موجودی حساب (نمایشی)</p>
-        <p className="mt-2 text-3xl font-semibold text-navy-950">
-          {formatToman(mockUser.balance)}
+        <p className="text-sm text-ink-muted">کد ملی</p>
+        <p className="mt-2 text-2xl font-semibold text-navy-950" dir="ltr">
+          {user.nationalCode}
         </p>
-        <p className="mt-1 text-sm text-ink-muted" dir="rtl">
-          شماره حساب: {mockUser.accountNumber}
-        </p>
+        <p className="mt-1 text-sm text-ink-muted">اطلاعات حساب و موجودی پس از اتصال سرویس بانکی نمایش داده می‌شود.</p>
       </div>
+
+      <section className="rounded-xl border border-line bg-white p-6">
+        <h2 className="text-base font-semibold text-ink">سازمان‌های شما</h2>
+        {user.organizations.length ? (
+          <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+            {user.organizations.map((organization) => (
+              <li key={organization.organizationId} className="rounded-lg bg-surface p-4">
+                <p className="font-medium text-ink">{organization.organizationName}</p>
+                <p className="mt-1 text-sm text-ink-muted">نقش: {organization.role}</p>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-3 text-sm text-ink-muted">هنوز سازمانی به این حساب پیوند نشده است.</p>
+        )}
+      </section>
 
       <section className="rounded-xl border border-line bg-white p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -88,13 +99,13 @@ export default function DashboardPage() {
                 </p>
               </div>
               <div className="rounded-lg bg-success/10 p-4">
-                <p className="text-sm text-ink-muted">حساب موجود</p>
+                <p className="text-sm text-ink-muted">حساب تأییدشده</p>
                 <p className="mt-1 text-xl font-semibold text-success">
                   {faNumber.format(report.validCount)} مورد
                 </p>
               </div>
               <div className="rounded-lg bg-danger/10 p-4">
-                <p className="text-sm text-ink-muted">حساب ناموجود</p>
+                <p className="text-sm text-ink-muted">تأییدنشده</p>
                 <p className="mt-1 text-xl font-semibold text-danger">
                   {faNumber.format(report.invalidCount)} مورد
                 </p>
@@ -109,7 +120,7 @@ export default function DashboardPage() {
 
             {report.invalidCount > 0 && (
               <p className="mt-4 rounded-lg bg-danger/10 px-4 py-3 text-sm text-danger">
-                {faNumber.format(report.invalidCount)} شماره حساب در بانک موجود نیست؛
+                {faNumber.format(report.invalidCount)} مورد تأیید نشد؛ خطای ارتباطی به معنی نامعتبر بودن حساب نیست.
                 برای مشاهده ردیف‌های قرمز به صفحه انتقال تجمیعی مراجعه کنید.
               </p>
             )}

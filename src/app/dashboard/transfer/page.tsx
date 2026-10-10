@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { transferSchema, type TransferFormValues } from "@/lib/validation/transfer";
 import {
   bankStatusMessage,
@@ -10,7 +10,7 @@ import {
   normalizeDestination,
   type AccountInquiry,
 } from "@/lib/mock/bank";
-import { mockUser } from "@/lib/mock/user";
+import { useCurrentUser } from "../layout";
 
 // کارمزدها آزمایشی هستند (تومان)
 const TRANSACTION_OPTIONS = [
@@ -29,8 +29,6 @@ function findOption(value: string | undefined) {
 const fa = (n: number) => n.toLocaleString("fa-IR");
 
 type Receipt = {
-  trackingCode: string;
-  dateTime: string;
   typeLabel: string;
   ownerName: string;
   destination: string;
@@ -40,19 +38,19 @@ type Receipt = {
 };
 
 type InquiryState =
-  | { phase: "idle" }
-  | { phase: "loading" }
-  | { phase: "done"; result: AccountInquiry };
+  | { phase: "loading"; destination: string }
+  | { phase: "done"; destination: string; result: AccountInquiry };
 
 export default function TransferPage() {
+  const user = useCurrentUser();
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [inquiry, setInquiry] = useState<InquiryState>({ phase: "idle" });
+  const [inquiry, setInquiry] = useState<InquiryState | null>(null);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const {
     register,
     handleSubmit,
     reset,
-    watch,
+    control,
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<TransferFormValues>({
@@ -60,23 +58,20 @@ export default function TransferPage() {
     defaultValues: { destination: "", amount: "", transactionType: "", description: "" },
   });
 
-  const destination = watch("destination");
-  const amountValue = watch("amount");
-  const typeValue = watch("transactionType");
+  const destination = useWatch({ control, name: "destination" });
+  const amountValue = useWatch({ control, name: "amount" });
+  const typeValue = useWatch({ control, name: "transactionType" });
+  const normalizedDestination = normalizeDestination(destination ?? "");
+  const currentInquiry = inquiry?.destination === normalizedDestination ? inquiry : null;
 
   useEffect(() => {
-    const normalized = normalizeDestination(destination ?? "");
-    setValue("transactionType", "");
+    const normalized = normalizedDestination;
     const looksComplete = /^\d{16}$/.test(normalized) || /^IR\d{24}$/.test(normalized);
-    if (!looksComplete) {
-      setInquiry({ phase: "idle" });
-      return;
-    }
+    if (!looksComplete) return;
     let cancelled = false;
-    setInquiry({ phase: "loading" });
     inquireAccountOwner(normalized).then((result) => {
       if (cancelled) return;
-      setInquiry({ phase: "done", result });
+      setInquiry({ phase: "done", destination: normalized, result });
       if (result.status === "valid") {
         setValue("transactionType", DEFAULT_TYPE[result.kind]);
       }
@@ -84,10 +79,12 @@ export default function TransferPage() {
     return () => {
       cancelled = true;
     };
-  }, [destination, setValue]);
+  }, [normalizedDestination, setValue]);
 
   const validInquiry =
-    inquiry.phase === "done" && inquiry.result.status === "valid" ? inquiry.result : null;
+    currentInquiry?.phase === "done" && currentInquiry.result.status === "valid"
+      ? currentInquiry.result
+      : null;
 
   const selectedOption = findOption(typeValue);
   const amountNumber = /^\d+$/.test(amountValue ?? "") ? Number(amountValue) : 0;
@@ -99,11 +96,8 @@ export default function TransferPage() {
     setReceipt(null);
     // نسخه آزمایشی بدون بک‌اند: هیچ تماس API واقعی انجام نمی‌شود
     await new Promise((resolve) => setTimeout(resolve, 700));
-    console.log("single transfer submit", values);
     const option = findOption(values.transactionType) ?? TRANSACTION_OPTIONS[0];
     setReceipt({
-      trackingCode: String(Math.floor(100000000000 + Math.random() * 900000000000)),
-      dateTime: new Date().toLocaleString("fa-IR"),
       typeLabel: option.label,
       ownerName: validInquiry.ownerName,
       destination: values.destination,
@@ -111,7 +105,7 @@ export default function TransferPage() {
       fee: option.fee,
       description: values.description ?? "",
     });
-    setSuccessMessage("انتقال با موفقیت انجام شد (آزمایشی)");
+    setSuccessMessage("پیش‌نمایش رسید آماده شد؛ هیچ مبلغی منتقل نشده است.");
     reset();
   };
 
@@ -138,7 +132,17 @@ export default function TransferPage() {
               className="w-full rounded-lg border border-line bg-white px-4 py-3 text-right text-base text-ink placeholder:text-ink-muted/70 transition-colors focus:border-navy-800 focus:outline-none focus:ring-2 focus:ring-navy-800/15 aria-invalid:border-danger aria-invalid:ring-danger/15"
               aria-invalid={!!errors.destination}
               aria-describedby={errors.destination ? "destination-error" : undefined}
-              {...register("destination")}
+              {...register("destination", {
+                onChange: (event) => {
+                  const normalized = normalizeDestination(event.currentTarget.value);
+                  setValue("transactionType", "");
+                  if (/^\d{16}$/.test(normalized) || /^IR\d{24}$/.test(normalized)) {
+                    setInquiry({ phase: "loading", destination: normalized });
+                  } else {
+                    setInquiry(null);
+                  }
+                },
+              })}
             />
             {errors.destination && (
               <p id="destination-error" className="text-sm text-danger">
@@ -147,14 +151,14 @@ export default function TransferPage() {
             )}
           </div>
 
-          {inquiry.phase === "loading" && (
+          {currentInquiry?.phase === "loading" && (
             <p role="status" className="rounded-lg bg-surface px-4 py-3 text-sm text-ink-muted">
               در حال استعلام...
             </p>
           )}
-          {inquiry.phase === "done" && inquiry.result.status !== "valid" && (
+          {currentInquiry?.phase === "done" && currentInquiry.result.status !== "valid" && (
             <p role="alert" className="rounded-lg bg-danger/10 px-4 py-3 text-sm text-danger">
-              {bankStatusMessage(inquiry.result.status)}
+              {bankStatusMessage(currentInquiry.result.status)}
             </p>
           )}
           {validInquiry && (
@@ -247,7 +251,7 @@ export default function TransferPage() {
             disabled={isSubmitting || !validInquiry}
             className="flex h-12 items-center justify-center rounded-lg bg-navy-950 text-base font-medium text-white transition-colors hover:bg-navy-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isSubmitting ? "در حال انتقال..." : "انتقال وجه"}
+            {isSubmitting ? "در حال آماده‌سازی..." : "پیش‌نمایش رسید"}
           </button>
         </form>
       </div>
@@ -261,12 +265,10 @@ export default function TransferPage() {
             </div>
             <dl className="flex flex-col gap-2 text-sm">
               {[
-                ["وضعیت", "موفق"],
-                ["کد پیگیری", receipt.trackingCode],
-                ["تاریخ و ساعت", receipt.dateTime],
+                ["وضعیت", "آزمایشی — انتقال انجام نشده"],
                 ["نوع تراکنش", receipt.typeLabel],
-                ["فرستنده", `${mockUser.firstName} ${mockUser.lastName}`],
-                ["شماره شبای مبدا", mockUser.iban],
+                ["فرستنده", user.displayName],
+                ["شماره شبای مبدا", "در این نسخه ثبت نشده است"],
                 ["گیرنده", receipt.ownerName],
                 ["شماره کارت/شبای مقصد", receipt.destination],
                 ["مبلغ انتقال", `${fa(receipt.amount)} تومان`],

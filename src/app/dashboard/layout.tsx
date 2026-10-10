@@ -1,13 +1,21 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { hasMockSession, clearMockSession } from "@/lib/mock/session";
+import { getCsrfToken, getCurrentUser, type AuthUser } from "@/lib/auth/session";
+
+const AuthUserContext = createContext<AuthUser | null>(null);
+
+export function useCurrentUser() {
+  const user = useContext(AuthUserContext);
+  if (!user) throw new Error("useCurrentUser must be used inside DashboardLayout");
+  return user;
+}
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "خلاصه حساب" },
-  { href: "/dashboard/profile", label: "مشخصات و رمز عبور" },
+  { href: "/dashboard/profile", label: "مشخصات کاربری" },
   { href: "/dashboard/transfer", label: "انتقال تکی" },
   { href: "/dashboard/transfer/bulk", label: "انتقال تجمیعی" },
 ];
@@ -15,28 +23,47 @@ const NAV_ITEMS = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [authorized, setAuthorized] = useState<boolean | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [checked, setChecked] = useState(false);
 
   useEffect(() => {
-    if (!hasMockSession()) {
+    let cancelled = false;
+    getCurrentUser().then((currentUser) => {
+      if (cancelled) return;
+      if (!currentUser) router.replace("/login");
+      else setUser(currentUser);
+      setChecked(true);
+    }).catch(() => {
+      if (cancelled) return;
       router.replace("/login");
-      return;
-    }
-    setAuthorized(true);
+      setChecked(true);
+    });
+    return () => { cancelled = true; };
   }, [router]);
 
-  const handleLogout = () => {
-    clearMockSession();
-    router.push("/login");
+  const handleLogout = async () => {
+    try {
+      const csrfToken = await getCsrfToken();
+      await fetch("/api/backend/api/auth/logout", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "X-CSRF-TOKEN": csrfToken },
+      });
+    } finally {
+      setUser(null);
+      router.replace("/login");
+      router.refresh();
+    }
   };
 
-  if (!authorized) {
+  if (!checked || !user) {
     return null;
   }
 
   return (
-    <div className="flex min-h-screen flex-1">
-      <div className="grid min-h-screen w-full lg:grid-cols-[16rem_1fr]">
+    <AuthUserContext.Provider value={user}>
+      <div className="flex min-h-screen flex-1">
+        <div className="grid min-h-screen w-full lg:grid-cols-[16rem_1fr]">
         <aside className="hidden flex-col justify-between border-l border-line bg-navy-950 px-6 py-8 lg:flex">
           <div className="flex flex-col gap-8">
             <span className="text-lg font-semibold text-white">افق بانک</span>
@@ -99,7 +126,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           <main className="flex-1 bg-surface px-6 py-8 lg:px-10">{children}</main>
         </div>
-      </div>
+        </div>
     </div>
+    </AuthUserContext.Provider>
   );
 }

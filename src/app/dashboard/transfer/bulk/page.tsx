@@ -104,7 +104,7 @@ export default function BulkTransferPage() {
     } else {
       setStatus({
         tone: "error",
-        message: `بررسی حساب‌ها کامل شد؛ ${faNumber.format(invalidCount)} مورد نامعتبر است و با هایلایت قرمز مشخص شد. گزارش در داشبورد ذخیره شد.`,
+        message: `بررسی حساب‌ها کامل شد؛ ${faNumber.format(invalidCount)} مورد تأیید نشد و با رنگ قرمز مشخص شد. خطای ارتباطی به معنی نامعتبر بودن حساب نیست. گزارش در داشبورد ذخیره شد.`,
       });
     }
   }
@@ -246,7 +246,7 @@ export default function BulkTransferPage() {
               <h2 className="font-semibold text-ink">صف انتقال‌ها</h2>
               <p className="mt-1 text-sm text-ink-muted">
                 {isVerified
-                  ? "ردیف‌های قرمز دارای شماره حساب نامعتبر هستند و قابل انتقال نیستند."
+                  ? "ردیف‌های قرمز تأیید نشده‌اند؛ خطای ارتباطی به معنی نامعتبر بودن حساب نیست."
                   : "مواردی را که نمی‌خواهید با دکمه حذف از صف خارج کنید."}
               </p>
             </div>
@@ -299,7 +299,7 @@ export default function BulkTransferPage() {
                           </span>
                         ) : invalid ? (
                           <span className="font-medium text-danger">
-                            {bankStatusMessage(row.status as "not_found" | "invalid_format")}
+                            {bankStatusMessage(row.status as "not_found" | "invalid_format" | "unavailable")}
                           </span>
                         ) : (
                           <span className="text-success">{bankStatusMessage("valid")}</span>
@@ -325,7 +325,7 @@ export default function BulkTransferPage() {
           <div className="grid gap-3 border-t border-line bg-surface/60 p-5 sm:grid-cols-3">
             <div>
               <p className="text-sm text-ink-muted">
-                {isVerified ? "انتقالات معتبر" : "تعداد انتقالی"}
+                {isVerified ? "انتقالات تأییدشده" : "تعداد انتقالی"}
               </p>
               <p className="mt-1 text-xl font-semibold text-navy-950">
                 {faNumber.format(validRows.length)} مورد
@@ -339,7 +339,7 @@ export default function BulkTransferPage() {
             </div>
             <div>
               <p className="text-sm text-ink-muted">
-                {isVerified ? "مورد نامعتبر" : "مبلغ کل به تومان"}
+                {isVerified ? "مورد تأییدنشده" : "مبلغ کل به تومان"}
               </p>
               <p
                 className={`mt-1 text-xl font-semibold ${

@@ -28,13 +28,7 @@ export default function LoginPage() {
             <LoginForm />
 
             <p className="text-center text-sm text-ink-muted">
-              حساب کاربری ندارید؟{" "}
-              <a
-                href="/register"
-                className="font-medium text-navy-800 underline decoration-line underline-offset-4 hover:decoration-navy-800"
-              >
-                ثبت‌نام کنید
-              </a>
+              ثبت‌نام سازمانی هنوز در Backend فعال نشده است؛ برای ایجاد حساب با مدیر سامانه تماس بگیرید.
             </p>
           </div>
         </div>
