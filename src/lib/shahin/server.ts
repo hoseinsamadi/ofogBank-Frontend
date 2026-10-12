@@ -5,7 +5,7 @@ type InquiryResult =
   | { status: "valid"; ownerName: string; kind: "card" | "iban" }
   | { status: "not_found" | "invalid_format" };
 
-type TokenCache = { value: string; expiresAt: number };
+type TokenCache = { value: string; expiresAt: number; accounts: string[] };
 let tokenCache: TokenCache | null = null;
 
 class ShahinError extends Error {}
@@ -71,6 +71,9 @@ async function accessToken() {
   tokenCache = {
     value: token,
     expiresAt: Date.now() + Math.max(60, expiresIn) * 1000,
+    accounts: Array.isArray(body.accounts)
+      ? body.accounts.filter((a): a is string => typeof a === "string")
+      : [],
   };
   return token;
 }
@@ -151,6 +154,75 @@ export async function inquireShahinAccount(destination: string): Promise<Inquiry
     ownerName: ownerName || "نام صاحب حساب در پاسخ سرویس نبود",
     kind: "iban",
   };
+}
+
+export type AccountReadAction = "list" | "info" | "balance" | "statement";
+
+export type AccountReadInput = {
+  action: AccountReadAction;
+  sourceAccount?: string;
+  fromDate?: string;
+  toDate?: string;
+  fromTime?: string;
+  toTime?: string;
+};
+
+export class ShahinInputError extends Error {}
+
+const ACCOUNT_PATHS: Record<AccountReadAction, string> = {
+  list: "aisp/get-account-list",
+  info: "aisp/get-account-info",
+  balance: "aisp/get-account-balance",
+  statement: "aisp/get-account-statement",
+};
+
+function normalizeAccount(value: string) {
+  return value.replace(/[\s-]/g, "").toUpperCase();
+}
+
+function optionalDigits(value: string | undefined, length: number, name: string) {
+  if (value === undefined || value === "") return undefined;
+  if (!new RegExp(`^\\d{${length}}$`).test(value)) {
+    throw new ShahinInputError(`invalid ${name}`);
+  }
+  return value;
+}
+
+/** Read-only account services. sourceAccount must be one of the accounts granted to the app token. */
+export async function readShahinAccountData(input: AccountReadInput) {
+  const path = ACCOUNT_PATHS[input.action];
+  if (!path) throw new ShahinInputError("invalid action");
+
+  await accessToken();
+  const allowed = (tokenCache?.accounts ?? []).map(normalizeAccount);
+  if (allowed.length === 0) {
+    throw new ShahinError("token has no authorized accounts");
+  }
+  const fallback = process.env.SHAHIN_AUTHORIZED_SOURCE_ACCOUNT?.trim();
+  const sourceAccount = normalizeAccount(input.sourceAccount || fallback || allowed[0] || "");
+  if (!sourceAccount) throw new ShahinInputError("sourceAccount required");
+  if (!allowed.includes(sourceAccount)) {
+    throw new ShahinInputError("account not authorized");
+  }
+
+  const payload: Record<string, string> = {
+    bank: requiredEnv("SHAHIN_BANK"),
+    nationalCode: requiredEnv("SHAHIN_NATIONAL_CODE"),
+    sourceAccount,
+  };
+
+  if (input.action === "statement") {
+    const fromDate = optionalDigits(input.fromDate, 8, "fromDate");
+    const toDate = optionalDigits(input.toDate, 8, "toDate");
+    const fromTime = optionalDigits(input.fromTime, 6, "fromTime");
+    const toTime = optionalDigits(input.toTime, 6, "toTime");
+    if (fromDate) payload.fromDate = fromDate;
+    if (toDate) payload.toDate = toDate;
+    if (fromDate && fromTime) payload.fromTime = fromTime;
+    if (toDate && toTime) payload.toTime = toTime;
+  }
+
+  return callShahin(path, payload);
 }
 
 export function clearShahinTokenCache() {

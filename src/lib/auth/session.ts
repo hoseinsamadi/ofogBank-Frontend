@@ -2,6 +2,7 @@ export type AuthUser = {
   id: string;
   nationalCode: string;
   displayName: string;
+  roles: string[];
   organizations: Array<{
     organizationId: string;
     organizationName: string;

@@ -1,24 +1,15 @@
 import { inquireShahinAccount } from "@/lib/shahin/server";
+import { isSameOriginRequest, isSystemAdminRequest } from "@/lib/auth/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  // The current app login is a client-side mock, so do not expose this banking
-  // proxy from a production deployment without adding real server auth first.
-  if (process.env.NODE_ENV !== "development") {
-    return Response.json({ status: "unavailable" }, { status: 503 });
+  if (!isSameOriginRequest(request)) {
+    return Response.json({ status: "unauthorized" }, { status: 403 });
   }
-
-  const origin = request.headers.get("origin");
-  if (origin) {
-    try {
-      if (new URL(origin).origin !== new URL(request.url).origin) {
-        return Response.json({ status: "unavailable" }, { status: 403 });
-      }
-    } catch {
-      return Response.json({ status: "unavailable" }, { status: 403 });
-    }
+  if (!(await isSystemAdminRequest(request))) {
+    return Response.json({ status: "unauthorized" }, { status: 401 });
   }
 
   let destination: unknown;

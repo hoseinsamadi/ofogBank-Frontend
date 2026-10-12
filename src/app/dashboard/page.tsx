@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import { useCurrentUser } from "./layout";
+import { AccountBalanceCard } from "./AccountBalanceCard";
 import {
   getStoredBulkTransferReport,
   subscribeToBulkTransferReport,
@@ -47,6 +48,8 @@ export default function DashboardPage() {
         </p>
         <p className="mt-1 text-sm text-ink-muted">اطلاعات حساب و موجودی پس از اتصال سرویس بانکی نمایش داده می‌شود.</p>
       </div>
+
+      <AccountBalanceCard />
 
       <section className="rounded-xl border border-line bg-white p-6">
         <h2 className="text-base font-semibold text-ink">سازمان‌های شما</h2>
